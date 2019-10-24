@@ -1,0 +1,38 @@
+1.echo_c++ example server
+
+server端
+main
+--google::ParseCommandLineFlags
+--Server::AddService
+----Server::AddServiceInternal
+--Server::Start(int port, const ServerOptions* opt)
+----Server::Start(const base::EndPoint& endpoint, const ServerOptions* opt)
+------Server::StartInternal
+--------base::fd_guard sockfd(_options.listen_sockfd(_listen_addr, FLAGS_reuse_addr));
+--------Server::BuildAcceptor
+--------Acceptor::StartAccept
+----------Socket::Create
+--Server::RunUntilAskedToQuit
+----IsAskedToQuit
+------pthread_once(&register_quit_signal_once, RegisterQuitSignalOrDie);
+--------RegisterQuitSignalOrDie
+----------signal(SIGINT, quit_handler)
+----------signal(SIGTERM, quit_handler)
+
+service EchoService {
+    rpc Echo(EchoRequest) returns (EchoResponse);
+    rpc ComboEcho(ComboRequest) returns (ComboResponse);
+    rpc BytesEcho1(BytesRequest) returns (BytesResponse);
+    rpc BytesEcho2(BytesRequest) returns (BytesResponse);
+}
+
+--------TODO:
+Echo哪里调用的？？？需要debug
+
+2.echo_c++ example client
+main
+--google::ParseCommandLineFlags
+----Channel::Init
+----stub.Echo(&cntl, &request, &response, NULL);//这个Echo()在Server端定义。通过Stub和Client共享
+----
+
