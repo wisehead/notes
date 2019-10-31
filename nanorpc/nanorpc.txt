@@ -1,0 +1,87 @@
+1.echo.proto
+/ Specs for Echo
+option cc_generic_services = true;
+package echo;
+
+message EchoRequest
+{
+  required string message = 1;
+};
+
+message EchoResponse
+{
+  required string response = 1;
+};
+
+service EchoService
+{
+  rpc Echo1(EchoRequest) returns (EchoResponse);
+  rpc Echo2(EchoRequest) returns (EchoResponse);
+};
+
+2.EchoServer.cc
+class EchoServiceImpl : public echo::EchoService {
+public:
+    EchoServiceImpl() {};
+
+    virtual void Echo1(::google::protobuf::RpcController* controller,
+                       const ::echo::EchoRequest* request,
+                       ::echo::EchoResponse* response,
+                       ::google::protobuf::Closure* done) {
+        std::cerr << "Received1: " << request->message().c_str() << std::endl;
+        response->set_response(std::string("You sent1: ") + request->message());
+        if (done) {
+            done->Run();
+        }
+    }
+};
+
+
+main
+--nrpc::RpcServer::RegisterService
+----EchoService::GetDescriptor//xxx
+------protobuf_AssignDescriptorsOnce//xxx
+--------::google::protobuf::GoogleOnceInit//yyy
+----EchoService::GetRequestPrototype//xxx
+------EchoRequest::default_instance//xxx
+--------protobuf_AddDesc_echo_2eproto//xxx
+--------::google::protobuf::DescriptorPool::InternalAddGeneratedFile//yy
+--------::google::protobuf::MessageFactory::InternalRegisterGeneratedFile//yy
+--------EchoRequest::default_instance_ = new EchoRequest()
+--------EchoResponse::default_instance_ = new EchoResponse();
+--------EchoRequest::InitAsDefaultInstance//xxx
+--------EchoResponse::InitAsDefaultInstance
+--------::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_echo_2eproto);//yy
+----------protobuf_ShutdownFile_echo_2eproto//xx
+----EchoService::GetResponsePrototype
+------EchoResponse::default_instance
+--------protobuf_AddDesc_echo_2eproto
+----RpcMethod *rpc_method = new RpcMethod(service, request, response, method);
+----rpc_method_map_[hash] = rpc_method;//rpc_method_map
+--nrpc::RpcServer::Start
+----memcpy((char*)(&opcode), buf, sizeof(opcode));//parse op_code
+----rpc_method_map_.find(opcode);//get rpc method
+----request->ParseFromString//yy
+----EchoService::CallMethod
+------EchoServiceImpl.Echo1
+----response->SerializeToArray
+----sock.send//client
+
+
+
+3.EchoClient.cc
+main
+--nrpc::RpcChannel rpc_channel(ECHO_ENDPOINT_PORT);
+--echo::EchoService::Stub stub(&rpc_channel);
+--EchoService_Stub::Echo1
+----EchoRequest::descriptor
+----nrpc::RpcChannel::CallMethod
+------request->SerializeToArray
+------sock.send(buf,msg_len,0);
+------sock.recv(&buf, NN_MSG, 0);
+------response->ParseFromString(buf);
+
+
+
+
+

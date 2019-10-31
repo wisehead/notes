@@ -36,3 +36,6 @@ main
 ----stub.Echo(&cntl, &request, &response, NULL);//这个Echo()在Server端定义。通过Stub和Client共享
 ----
 
+
+3.
+
