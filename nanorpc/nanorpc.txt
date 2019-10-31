@@ -81,7 +81,81 @@ main
 ------sock.recv(&buf, NN_MSG, 0);
 ------response->ParseFromString(buf);
 
+4.protobuf
+--1.EchoRequest
+--2.EchoResponse
+--3.EchoService//
+	virtual void Echo1()
+	virtual void Echo2()
+	void CallMethod()//Echo1/Echo2Server
+	
+--4.class EchoService_Stub : public EchoService//client
+	(1)void Echo1()
+	--channel_->CallMethod
+	(2)void Echo2()
+	(3)::google::protobuf::RpcChannel* channel_;
+--5.
 
 
 
+5.
 
+--1.class RpcChannel : public google::protobuf::RpcChannel
+	CallMethod()
+	nn::socket sock;
+	
+--2.class RpcServer 
+		(1)socket server()//serverclientrequestservice->CallMethod()response
+		(2)RegisterService()
+		(3)Start()
+--3.class EchoServiceImpl : public echo::EchoService //ServerEcho
+		done->Run();
+
+6.brpc
+main of client
+--google::protobuf::Closure* done = baidu::rpc::NewCallback(&HandleEchoResponse, cntl, response);//
+--stub.Echo(cntl, &request, response, done);
+
+main of server
+--
+
+
+7.multi-thread
+client:
+    if (!FLAGS_use_bthread) {
+        for (int i = 0; i < FLAGS_thread_num; ++i) {
+            if (pthread_create(&tids[i], NULL, sender, &channel) != 0) {
+                LOG(ERROR) << "Fail to create pthread";
+                return -1;
+            }
+        }
+    } else {
+        for (int i = 0; i < FLAGS_thread_num; ++i) {
+            if (bthread_start_background(
+                    &tids[i], NULL, sender, &channel) != 0) {
+                LOG(ERROR) << "Fail to create bthread";
+                return -1;
+            }
+        }
+    }
+    
+server:
+
+    
+
+
+
+7.brpc in depth
+Channel::CallMethod//client
+--Controller::IssueRP
+
+
+ControllerPrivateAccessor::OnResponse/OnServerStreamCreated::Run/SubDone::Run
+--Controller::OnVersionedRPCReturned
+----Controller::EndRPC
+------_done->Run()
+
+
+		
+		
+		
